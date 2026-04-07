@@ -1,11 +1,17 @@
+// composables/useDocuments.js
 export const useDocuments = () => {
-    const globalDocs = useState('global_docs', () => []);
-    const myDocs = useState('my_docs', () => []);
+    const globalDocs = useState('global_documents', () => []);
+    const myDocs = useState('my_documents', () => []);
 
     const addDocuments = (newDocs) => {
-        // This is the critical part: adding new items to the arrays
-        myDocs.value = [...newDocs, ...myDocs.value];
-        globalDocs.value = [...newDocs, ...globalDocs.value];
+        // Add a real Date object for relative time calculation
+        const docsWithTime = newDocs.map(doc => ({
+            ...doc,
+            timestamp: new Date()
+        }));
+
+        myDocs.value = [...docsWithTime, ...myDocs.value];
+        globalDocs.value = [...docsWithTime, ...globalDocs.value];
     };
 
     return { globalDocs, myDocs, addDocuments };

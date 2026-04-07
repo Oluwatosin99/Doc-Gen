@@ -1,5 +1,6 @@
 <template>
-  <div>
+  <div class="min-h-screen transition-colors duration-300 
+              bg-white dark:bg-[#0B1511] text-gray-900 dark:text-white">
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
@@ -26,11 +27,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.dark body {
+  background-color: #0B1511;
+}
+
 /* Optional: Smooth page transitions */
 .page-enter-active,
 .page-leave-active {
   transition: all 0.2s;
 }
+
 .page-enter-from,
 .page-leave-to {
   opacity: 0;

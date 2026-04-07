@@ -1,62 +1,38 @@
 <template>
-    <div class="overflow-x-auto mt-4">
-        <table class="w-full text-left border-collapse">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-separate border-spacing-0 border-b border-gray-300 dark:bg-gray-800 dark:border-gray-500"> 
             <thead>
-                <tr class="border-b border-gray-100">
-                    <th class="py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Generated ID</th>
-                    <th class="py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Document Title</th>
-                    <th v-if="isAdmin" class="py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                        Created By</th>
-                    <th class="py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Team</th>
-                    <th class="py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time</th>
-                    <th class="py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Action
-                    </th>
+                <tr class="text-[10px] font-bold text-gray-500 uppercase tracking-widest rounded border bg-gray-100 dark:text-white dark:border-gray-500">
+                    <th class="py-4 px-4 rounded-t1-xl">Document Title</th>
+                    <th class="py-4 px-4 text-center">Document ID</th>
+                    <th class="py-4 px-4">Type</th>
+                    <th class="py-4 px-4 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
-                <tr v-for="doc in documents" :key="doc.id" class="group hover:bg-gray-50 transition-colors">
+                <tr v-for="doc in documents" :key="doc.id" class="group">
                     <td class="py-5">
-                        <span class="font-mono text-xs font-bold text-[#00B800] bg-[#E6F7E6] px-2 py-1 rounded-md">
+                        <div class="font-bold text-gray-800 text-sm">{{ doc.title || 'Untitled' }}</div>
+                        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">
+                            By Current User • {{ formatTime(doc.timestamp) }}
+                        </div>
+                    </td>
+                    <td class="py-5 text-center">
+                        <span class="font-mono text-[11px] font-bold text-[#00B800] uppercase tracking-wider">
                             {{ doc.id }}
                         </span>
                     </td>
-
                     <td class="py-5">
-                        <div class="text-sm font-semibold text-gray-700 truncate max-w-[200px]">
-                            {{ doc.title || 'Untitled Document' }}
-                        </div>
-                    </td>
-
-                    <td v-if="isAdmin" class="py-5">
-                        <div class="flex items-center gap-2">
-                            <div
-                                class="w-6 h-6 rounded-full bg-gray-200 text-[10px] flex items-center justify-center font-bold">
-                                {{ doc.author.charAt(0) }}
-                            </div>
-                            <span class="text-xs font-medium text-gray-600">{{ doc.author }}</span>
-                        </div>
-                    </td>
-
-                    <td class="py-5">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                            {{ doc.team }}
+                        <span
+                            class="bg-[#F0FFF0] text-[#00B800] text-[9px] font-black px-2 py-1 rounded uppercase tracking-tighter">
+                            {{ doc.type }}
                         </span>
                     </td>
-
-                    <td class="py-5 text-xs text-gray-400 font-medium">
-                        {{ doc.time }}
-                    </td>
-
                     <td class="py-5 text-right">
-                        <button class="text-gray-300 hover:text-[#FF7A00] transition-colors p-2">
-                            <MoreHorizontal :size="18" />
+                        <button @click="copyToClipboard(doc.id)" v-ripple
+                            class="text-gray-300 hover:text-[#00B800] transition-colors p-2 relative overflow-hidden">
+                            <Copy :size="16" />
                         </button>
-                    </td>
-                </tr>
-
-                <tr v-if="documents.length === 0">
-                    <td colspan="6" class="py-20 text-center text-gray-400 text-sm italic">
-                        No documents generated yet. Follow the steps above to get started.
                     </td>
                 </tr>
             </tbody>
@@ -65,30 +41,63 @@
 </template>
 
 <script setup>
-import { MoreHorizontal } from 'lucide-vue-next';
+import { Copy } from 'lucide-vue-next';
 
-// Define the data that comes from the parent page
-const props = defineProps({
-    documents: {
-        type: Array,
-        required: true,
-        default: () => []
-    },
-    isAdmin: {
-        type: Boolean,
-        default: false
+defineProps(['documents', 'isAdmin']);
+
+const formatTime = (date) => {
+    if (!date) return 'Just Now';
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    if (seconds < 5) return 'Just Now';
+    if (seconds < 60) return `${seconds} seconds ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hours ago`;
+    return `${Math.floor(hours / 24)} days ago`;
+};
+
+const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    // Add a toast notification here if you have one
+};
+
+// Simple Ripple Directive
+const vRipple = {
+    mounted(el) {
+        el.addEventListener('mousedown', (e) => {
+            const rect = el.getBoundingClientRect();
+            const ripple = document.createElement('span');
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+
+            ripple.style.width = ripple.style.height = `${size}px`;
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            ripple.classList.add('ripple');
+            el.appendChild(ripple);
+
+            setTimeout(() => ripple.remove(), 600);
+        });
     }
-});
+};
 </script>
 
-<style scoped>
-/* Optional: Makes the scrollbar look cleaner if table is wide */
-::-webkit-scrollbar {
-    height: 4px;
+<style>
+.ripple {
+    position: absolute;
+    background: rgba(0, 184, 0, 0.3);
+    border-radius: 50%;
+    transform: scale(0);
+    animation: ripple-animation 0.6s linear;
+    pointer-events: none;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #E5E7EB;
-    border-radius: 10px;
+@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
 }
 </style>
