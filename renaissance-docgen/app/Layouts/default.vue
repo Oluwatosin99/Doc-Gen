@@ -4,10 +4,16 @@
 
         <aside
             class="w-64 bg-white dark:bg-[#0B1511] border-r border-gray-100 dark:border-white/5 flex flex-col p-6 fixed h-full z-10 transition-colors">
-            <div class="text-[#00B800] font-black text-2xl tracking-tight mb-10 italic uppercase">
-                RENAISSANCE
-            </div>
-
+  <!-- LOGO -->
+<div class="mb-12 flex items-center">
+  <img
+    :src="colorMode.preference === 'dark'
+      ? '/images/RENAISSANCE-dark.png'
+      : '/images/RENAISSANCE-light.png'"
+    alt="Renaissance Africa Energy Logo"
+    class="h-[52px] w-auto transition-all duration-300"
+   /> 
+</div>
             <nav class="flex-1 space-y-4">
                 <template v-if="currentRole === 'general'">
                     <NuxtLink to="/" class="flex items-center gap-3 p-3 rounded-xl transition-all text-sm"
