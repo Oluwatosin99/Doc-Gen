@@ -1,35 +1,49 @@
 <template>
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-separate border-spacing-0 border-b border-gray-300 dark:bg-gray-800 dark:border-gray-500"> 
+        <table
+            class="w-full text-left border-separate border-spacing-0 border-b border-gray-300 dark:bg-gray-800 dark:border-gray-500">
             <thead>
-                <tr class="text-[10px] font-bold text-gray-500 uppercase tracking-widest rounded border bg-gray-100 dark:text-white dark:border-gray-500">
+                <tr
+                    class="text-[10px] font-bold text-gray-500 uppercase tracking-widest rounded border bg-gray-100 dark:text-white dark:border-gray-500 dark:bg-gray-500">
                     <th class="py-4 px-4 rounded-t1-xl">Document Title</th>
                     <th class="py-4 px-4 text-center">Document ID</th>
-                    <th class="py-4 px-4">Type</th>
+                    <th class="py-4 px-4 text-center">Organization</th>
+                    <th class="py-4 px-4">Date</th>
                     <th class="py-4 px-4 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
                 <tr v-for="doc in documents" :key="doc.id" class="group">
-                    <td class="py-5">
-                        <div class="font-bold text-gray-800 text-sm">{{ doc.title || 'Untitled' }}</div>
+                    <td class="py-5 px-4">
+                        <div class="font-bold text-gray-800 text-sm dark:text-gray-100">
+                            {{ doc.title || 'Untitled' }}
+                        </div>
                         <div class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">
-                            By Current User • {{ formatTime(doc.timestamp) }}
+                            Renaissance Africa Energy  
                         </div>
                     </td>
+
                     <td class="py-5 text-center">
-                        <span class="font-mono text-[11px] font-bold text-[#00B800] uppercase tracking-wider">
-                            {{ doc.id }}
+                        <span class="font-mono text-[13px] font-bold text-[#00B800] uppercase tracking-wider">
+                            {{ doc.docNo }}
                         </span>
                     </td>
-                    <td class="py-5">
+
+                    <td class="py-5 text-center">
                         <span
-                            class="bg-[#F0FFF0] text-[#00B800] text-[9px] font-black px-2 py-1 rounded uppercase tracking-tighter">
-                            {{ doc.type }}
+                            class="bg-[#F0FFF0] text-[#00B800] text-[11px] font-black px-2 py-1 rounded uppercase tracking-tighter">
+                            {{ doc.organization }}
                         </span>
                     </td>
-                    <td class="py-5 text-right">
-                        <button @click="copyToClipboard(doc.id)" v-ripple
+
+                    <td class="py-5">
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                            {{ doc.timestamp }}
+                        </span>
+                    </td>
+
+                    <td class="py-5 text-right px-4">
+                        <button @click="copyToClipboard(doc.docNo)" v-ripple
                             class="text-gray-300 hover:text-[#00B800] transition-colors p-2 relative overflow-hidden">
                             <Copy :size="16" />
                         </button>

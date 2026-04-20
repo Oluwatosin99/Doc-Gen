@@ -1,18 +1,39 @@
-// composables/useDocuments.js
 export const useDocuments = () => {
-    const globalDocs = useState('global_documents', () => []);
-    const myDocs = useState('my_documents', () => []);
+    const myDocs = useState('myDocs', () => []);
+    const userStore = useUserStore();
 
-    const addDocuments = (newDocs) => {
-        // Add a real Date object for relative time calculation
-        const docsWithTime = newDocs.map(doc => ({
-            ...doc,
-            timestamp: new Date()
-        }));
+    const refresh = async () => {
+        const name = userStore.user?.fullName;
 
-        myDocs.value = [...docsWithTime, ...myDocs.value];
-        globalDocs.value = [...docsWithTime, ...globalDocs.value];
+        // 🔥 WAIT until user exists
+        if (!name) return;
+
+        const finalSearch = name.replace(/\./g, ' ');
+
+        try {
+            const res = await $fetch('/api/documents/my-list', {
+                params: { search: finalSearch }
+            });
+
+            if (res.success) {
+                myDocs.value = res.data || [];
+            }
+        } catch (err) {
+            console.error('Doc fetch failed:', err);
+            myDocs.value = [];
+        }
     };
 
-    return { globalDocs, myDocs, addDocuments };
+    // 🔥 AUTO-REFETCH when user becomes available
+    watch(
+        () => userStore.user?.fullName,
+        async (newName) => {
+            if (newName) {
+                await refresh();
+            }
+        },
+        { immediate: true } // 👈 THIS is the magic
+    );
+
+    return { myDocs, refresh };
 };

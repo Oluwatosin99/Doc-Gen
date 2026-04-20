@@ -1,7 +1,29 @@
 {
     "cSpell.words": [
+        "ACTIVITYDONE",
+        "Adminclick",
+        "CODEDESC",
+        "COMPANYCODE",
+        "COMPANYDESCRIPTION",
+        "CORRESPONDENCECODE",
+        "DATEDEFINED",
+        "Dateof",
+        "DATEOFACTIVITY",
+        "Dawodu",
+        "DISCIPLINECODE",
+        "DISCIPLINEDESC",
+        "Firstname",
+        "Lastname",
         "lucide",
         "Nuxt",
-        "nuxtjs"
+        "nuxtjs",
+        "Oluwatosin",
+        "ONMOUNTED",
+        "Organisation",
+        "persistedstate",
+        "Pinia",
+        "Reqtime",
+        "spnigeria", 
+        "LocaUnit"
     ]
 }
