@@ -1,34 +1,42 @@
-import db from '../../db/database'
+// server/api/admin/users.post.ts
+import { queryDatabase } from '../../utils/mssql'
 
 export default defineEventHandler(async (event) => {
     const { username, enabled, editorEmail } = await readBody(event);
     const editorShort = editorEmail.split('@')[0];
-    const dateDefined = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    
+    // Create a safe ISO date for MSSQL: 2026-04-24
+    const now = new Date();
+    const dbDate = now.toISOString().slice(0, 10); 
 
     try {
-        const transaction = db.transaction(() => {
-            // 1. Get the last ID from the table
-            const lastEntry = db.prepare('SELECT MAX(ID) as lastId FROM Tbl_Administrators').get() as { lastId: number };
-            const newId = (lastEntry?.lastId || 0) + 1;
+        const isEnabled = (enabled === 1 || enabled === true || enabled === 'TRUE') ? 1 : 0;
 
-            // 2. Insert with the new ID (8 if last was 7)
-            db.prepare('INSERT INTO Tbl_Administrators (ID, USERNAME, ENABLED, DATEDEFINED) VALUES (?, ?, ?, ?)')
-                .run(newId, username, enabled, dateDefined);
+        // 1. Get the last ID for Tbl_Administrators
+        const adminRows = await queryDatabase('SELECT MAX(ID) as lastId FROM Tbl_Administrators');
+        const newAdminId = (Number(adminRows[0]?.lastId) || 0) + 1;
 
-            // 3. Log Activity with the same ID logic for Tracking table
-            const lastTrack = db.prepare('SELECT MAX(ID) as lastId FROM Tbl_ActivityTracking').get() as { lastId: number };
-            const newTrackId = (lastTrack?.lastId || 0) + 1;
+        // 2. Insert New Administrator using ISO date for DATEDEFINED
+        await queryDatabase(`
+            INSERT INTO Tbl_Administrators (ID, USERNAME, ENABLED, DATEDEFINED) 
+            VALUES (${newAdminId}, '${username}', ${isEnabled}, '${dbDate}')
+        `);
 
-            const activityDate = new Date().toISOString().slice(2, 10).replace(/-/g, '/');
-            const activityText = `Insertion of new entry for  [${username}] BY THE ADMIN ~ ${editorShort}`;
+        // 3. Get the last ID for Tbl_ActivityTracking
+        const trackRows = await queryDatabase('SELECT MAX(ID) as lastId FROM Tbl_ActivityTracking');
+        const newTrackId = (Number(trackRows[0]?.lastId) || 0) + 1;
 
-            db.prepare('INSERT INTO Tbl_ActivityTracking (ID, DateofActivity, USERiD, ActivityDone) VALUES (?, ?, ?, ?)')
-                .run(newTrackId, activityDate, editorShort, activityText);
-        });
+        const activityText = `Insertion of new entry for [${username}] BY THE ADMIN ~ ${editorShort}`;
 
-        transaction();
+        // 4. Log Activity using ISO date
+        await queryDatabase(`
+            INSERT INTO Tbl_ActivityTracking (ID, DateofActivity, USERiD, ActivityDone) 
+            VALUES (${newTrackId}, '${dbDate}', '${editorShort}', '${activityText}')
+        `);
+
         return { success: true };
     } catch (e: any) {
+        console.error("User Creation Error (MSSQL):", e.message);
         throw createError({ statusCode: 500, statusMessage: e.message });
     }
 });

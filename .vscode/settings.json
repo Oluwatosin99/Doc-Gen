@@ -12,8 +12,10 @@
         "Dawodu",
         "DISCIPLINECODE",
         "DISCIPLINEDESC",
+        "DOCUMENTREGISTER",
         "Firstname",
         "Lastname",
+        "LocaUnit",
         "lucide",
         "Nuxt",
         "nuxtjs",
@@ -23,7 +25,6 @@
         "persistedstate",
         "Pinia",
         "Reqtime",
-        "spnigeria", 
-        "LocaUnit"
+        "spnigeria"
     ]
 }

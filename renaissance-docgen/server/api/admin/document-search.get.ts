@@ -1,4 +1,5 @@
-import db from '../../db/database'
+// server/api/documents/document-search.get.ts
+import { queryDatabase } from '../../utils/mssql'
 
 export default defineEventHandler(async (event) => {
     const query = getQuery(event)
@@ -13,35 +14,31 @@ export default defineEventHandler(async (event) => {
 
     try {
         const whereClauses: string[] = []
-        const params: Record<string, any> = { limit, offset }
 
-        // 1. Build dynamic WHERE clauses
+        // 1. Build dynamic WHERE clauses (MSSQL Syntax)
         if (!showAll) {
             if (company) {
-                whereClauses.push("Organisation = :company")
-                params.company = company
+                whereClauses.push(`Organisation = '${company}'`)
             }
             if (year) {
-                whereClauses.push("DocumentNo LIKE :year")
-                params.year = `%-${year}-%`
+                whereClauses.push(`DocumentNo LIKE '%-${year}-%'`)
             }
             if (docNo) {
-                whereClauses.push("DocumentNo LIKE :docNo")
-                params.docNo = `%${docNo}`
+                whereClauses.push(`DocumentNo LIKE '%${docNo}'`)
             }
         }
 
-        // Initialize whereString properly to avoid redlining
         const whereString = whereClauses.length > 0 
             ? `WHERE ${whereClauses.join(' AND ')}` 
             : ''
 
-        // 2. Total Count (Fixed type redlining)
+        // 2. Total Count
         const countQuery = `SELECT COUNT(*) as total FROM DocumentRegister ${whereString}`
-        const countResult = db.prepare(countQuery).get(params) as { total: number } | undefined
-        const total = countResult?.total ?? 0
+        const countResult = await queryDatabase(countQuery)
+        const total = countResult[0]?.total ?? 0
 
-        // 3. Paginated Data
+        // 3. Paginated Data (MSSQL OFFSET/FETCH syntax)
+        // SQL Server requires an ORDER BY to use OFFSET
         const dataQuery = `
             SELECT 
                 UserDetails, 
@@ -52,10 +49,10 @@ export default defineEventHandler(async (event) => {
                 DocumentNo 
             FROM DocumentRegister 
             ${whereString} 
-            ORDER BY ReqDate DESC, ReqTime DESC 
-            LIMIT :limit OFFSET :offset
+            ORDER BY TRY_CAST(ReqDate AS DATE) DESC, ReqTime DESC 
+            OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY
         `
-        const records = db.prepare(dataQuery).all(params)
+        const records = await queryDatabase(dataQuery)
 
         return {
             success: true,
@@ -64,7 +61,7 @@ export default defineEventHandler(async (event) => {
         }
 
     } catch (error: any) {
-        console.error("Search API Error:", error)
+        console.error("Search API Error (MSSQL):", error)
         return {
             success: false,
             message: error.message,

@@ -11,7 +11,7 @@
                     <img :src="colorMode.preference === 'dark'
                         ? '/images/RENAISSANCE-dark2.png'
                         : '/images/RENAISSANCE-light.png'" alt="Renaissance Africa Energy Logo"
-                        class="h-[52px] w-auto transition-all duration-300" />
+                        class="h-[54px] w-auto transition-all duration-300" />
                 </div>
             </ClientOnly>
             <nav class="flex-1 space-y-4">
@@ -105,11 +105,6 @@
                 </h1>
 
                 <div class="flex items-center gap-6">
-                    <div class="relative w-64">
-                        <Search class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" :size="18" />
-                        <input type="text" placeholder="Search..."
-                            class="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-2xl text-sm focus:outline-none focus:ring-1 focus:ring-[#00B800] dark:text-white transition-all">
-                    </div>
 
                     <button @click="toggleColorMode"
                         class="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 text-gray-500 dark:text-[#00B800] hover:shadow-sm transition-all">

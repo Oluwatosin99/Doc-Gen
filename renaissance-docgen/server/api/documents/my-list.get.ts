@@ -1,4 +1,5 @@
-import db from '../../db/database'
+// server/api/documents/my-list.get.ts
+import { queryDatabase } from '../../utils/mssql'
 
 export default defineEventHandler(async (event) => {
     try {
@@ -7,11 +8,13 @@ export default defineEventHandler(async (event) => {
 
         if (!searchRaw) return { success: true, data: [] };
 
-        // 1. Create versions of the name to catch both yesterday and today
+        // 1. Logic for name variants to handle different name formats
         const searchWithSpaces = searchRaw.replace(/\./g, ' ');
         const searchWithDots = searchRaw.replace(/ /g, '.');
 
-        const userDocs = db.prepare(`
+        // 2. MSSQL Query
+        // Using ReqDate and ReqTime for ordering since rowid is SQLite-specific
+        const sql = `
             SELECT 
                 DocumentNo, 
                 Title, 
@@ -19,26 +22,29 @@ export default defineEventHandler(async (event) => {
                 ReqDate, 
                 ReqTime
             FROM DocumentRegister 
-            WHERE UserDetails LIKE ? 
-                OR UserDetails LIKE ? 
-                OR UserDetails LIKE ?
-            ORDER BY rowid DESC
-        `).all(`%${searchRaw}%`, `%${searchWithSpaces}%`, `%${searchWithDots}%`) as any[];
+            WHERE UserDetails LIKE '%${searchRaw}%' 
+                OR UserDetails LIKE '%${searchWithSpaces}%' 
+                OR UserDetails LIKE '%${searchWithDots}%'
+            ORDER BY ReqDate DESC, ReqTime DESC
+        `;
 
-        // 2. Map the data correctly
+        const userDocs = await queryDatabase(sql);
+
+        // 3. Mapping the data to match your frontend requirements
         const formattedData = userDocs.map((item) => {
             return {
                 id: item.DocumentNo,
                 docNo: item.DocumentNo,
                 title: item.Title || 'Untitled',
                 organization: item.Organisation || 'REN',
-                // Use the exact names from the SELECT above
+                // Combines date and time for a clean timestamp display
                 timestamp: `${item.ReqDate || ''} ${item.ReqTime || ''}`.trim()
             };
         });
 
         return { success: true, data: formattedData };
     } catch (e: any) {
+        console.error("My-List Fetch Error:", e.message);
         throw createError({ statusCode: 500, statusMessage: e.message });
     }
 });

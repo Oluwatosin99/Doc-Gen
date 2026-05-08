@@ -219,7 +219,7 @@ onMounted(async () => {
     if (userStore.user) return;
 
     try {
-        const authApi = config.public.appApiBaseUrl; // http://api.authenticate.spin-ng.local/authenticate
+        const authApi = config.public.authApiBaseUrl; // http://api.authenticate.spin-ng.local/authenticate
 
         // 1. Call the Corporate SSO endpoint
         // 'include' credentials tells the browser to send your Edge/Windows login

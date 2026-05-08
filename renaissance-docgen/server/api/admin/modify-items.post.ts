@@ -1,9 +1,14 @@
-import db from '../../db/database'
+// server/api/admin/modify-items.post.ts
+import { queryDatabase } from '../../utils/mssql'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     const { type, data, editorEmail } = body
     const editorShort = editorEmail?.split('@')[0] || 'Admin';
+
+    // Create a safe ISO date for MSSQL: 2026-04-24
+    const now = new Date();
+    const dbDate = now.toISOString().slice(0, 10);
 
     try {
         let table = ''
@@ -11,7 +16,7 @@ export default defineEventHandler(async (event) => {
         let descCol = ''
         let actionLabel = ''
 
-        // Map the types to the actual table/column names
+        // 1. Mapping
         if (type === 'company') {
             table = 'Companies'; codeCol = 'COMPANYCODE'; descCol = 'DESCRIPTION'; actionLabel = 'company';
         } else if (type === 'function') {
@@ -20,39 +25,42 @@ export default defineEventHandler(async (event) => {
             table = 'CorrespondenceType'; codeCol = 'CORRESPONDENCECODE'; descCol = 'CODEDESC'; actionLabel = 'correspondence';
         }
 
-        const transaction = db.transaction(() => {
-            // A. Check if the code already exists
-            const existing = db.prepare(`SELECT ${codeCol} FROM ${table} WHERE ${codeCol} = ?`).get(data.code);
+        // 2. Check if the code already exists
+        const existingRows = await queryDatabase(`SELECT ${codeCol} FROM ${table} WHERE ${codeCol} = '${data.code}'`);
+        const existing = existingRows.length > 0;
 
-            if (existing) {
-                // B. If exists, UPDATE
-                db.prepare(`UPDATE ${table} SET ${descCol} = ? WHERE ${codeCol} = ?`)
-                    .run(data.description, data.code);
-            } else {
-                // C. If not exists, INSERT
-                db.prepare(`INSERT INTO ${table} (${codeCol}, ${descCol}) VALUES (?, ?)`)
-                    .run(data.code, data.description);
-            }
+        if (existing) {
+            // 3. UPDATE
+            await queryDatabase(`
+                UPDATE ${table} 
+                SET ${descCol} = '${data.description}' 
+                WHERE ${codeCol} = '${data.code}'
+            `);
+        } else {
+            // 4. INSERT
+            await queryDatabase(`
+                INSERT INTO ${table} (${codeCol}, ${descCol}) 
+                VALUES ('${data.code}', '${data.description}')
+            `);
+        }
 
-            // D. Log to Activity Tracking (using your MAX(ID) logic)
-            const lastTrack = db.prepare('SELECT MAX(ID) as lastId FROM Tbl_ActivityTracking').get() as { lastId: number };
-            const newTrackId = (lastTrack?.lastId || 0) + 1;
+        // 5. Handle Activity Tracking (Manual ID logic)
+        const trackRows = await queryDatabase('SELECT MAX(ID) as lastId FROM Tbl_ActivityTracking');
+        const lastTrackId = trackRows[0]?.lastId || 0;
+        const newTrackId = Number(lastTrackId) + 1;
 
-            // Match your preferred date format (16/04/26)
-            const now = new Date();
-            const activityDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getFullYear()).slice(-2)}`;
+        const logMsg = `${existing ? 'Update' : 'Insertion'} of ${actionLabel} [${data.code}] and name [${data.description}] by the admin ~ ${editorShort}`;
 
-            const logMsg = `${existing ? 'Update' : 'Insertion'} of ${actionLabel} [${data.code}] and name [${data.description}] by the admin ~ ${editorShort}`;
+        // 6. Log the action using the safe ISO date (dbDate)
+        await queryDatabase(`
+            INSERT INTO Tbl_ActivityTracking (ID, DateofActivity, USERiD, ActivityDone) 
+            VALUES (${newTrackId}, '${dbDate}', '${editorShort}', '${logMsg}')
+        `);
 
-            db.prepare('INSERT INTO Tbl_ActivityTracking (ID, DateofActivity, USERiD, ActivityDone) VALUES (?, ?, ?, ?)')
-                .run(newTrackId, activityDate, editorShort, logMsg);
-        });
-
-        transaction();
         return { success: true };
 
     } catch (error: any) {
-        console.error("Manual Update Error:", error);
+        console.error("Manual Update Error (MSSQL):", error);
         throw createError({ statusCode: 500, statusMessage: error.message });
     }
 })
